@@ -1,0 +1,186 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>ISM Music — AI Song Generator</title>
+  <meta name="description" content="Describe a song and ISM Music writes, sings and produces it for you." />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎵</text></svg>" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <span class="logo">♪</span>
+      <span>ISM <strong>Music</strong></span>
+    </div>
+    <div class="topbar-right">
+      <span id="credits" class="chip" title="Remaining Suno API credits">Credits: …</span>
+      <button id="lockBtn" class="ghost small" hidden title="Change app password">🔒</button>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <section class="hero">
+      <h1>Turn an idea into a song.</h1>
+      <p>Describe a vibe, or write your own lyrics. Every request makes two versions.</p>
+    </section>
+
+    <section class="card">
+      <div class="tabs" role="tablist">
+        <button class="tab active" data-mode="simple" role="tab" aria-selected="true">✨ Simple</button>
+        <button class="tab" data-mode="custom" role="tab" aria-selected="false">🎛️ Custom</button>
+      </div>
+
+      <form id="genForm" autocomplete="off">
+        <!-- Simple mode -->
+        <div class="mode-simple">
+          <label for="prompt">Describe your song</label>
+          <textarea id="prompt" maxlength="3000" rows="4"
+            placeholder="An upbeat summer pop song about a road trip with friends, catchy chorus, female vocals"></textarea>
+          <div class="hint"><span id="promptCount">0</span>/3000</div>
+
+          <div class="ideas">
+            <span>Try:</span>
+            <button type="button" class="pill" data-idea="A chill lo-fi hip hop beat for late-night studying, rain sounds, mellow piano">Lo-fi study</button>
+            <button type="button" class="pill" data-idea="An epic cinematic orchestral anthem with choir, building to a huge climax">Epic cinematic</button>
+            <button type="button" class="pill" data-idea="A heartfelt acoustic country ballad about coming home to a small town">Country ballad</button>
+            <button type="button" class="pill" data-idea="High-energy EDM festival banger with a massive drop and euphoric synths">EDM banger</button>
+            <button type="button" class="pill" data-idea="Smooth 90s R&B love song with silky vocals and a slow groove">90s R&B</button>
+          </div>
+        </div>
+
+        <!-- Custom mode -->
+        <div class="mode-custom" hidden>
+          <div class="row">
+            <div class="field">
+              <label for="title">Title</label>
+              <input id="title" maxlength="80" placeholder="Midnight Drive" />
+            </div>
+            <div class="field">
+              <label for="vocalGender">Voice</label>
+              <select id="vocalGender">
+                <option value="">Any</option>
+                <option value="f">Female</option>
+                <option value="m">Male</option>
+              </select>
+            </div>
+          </div>
+
+          <label for="style">Style of music</label>
+          <input id="style" maxlength="1000" placeholder="synthwave, dreamy, 80s, retro drums" />
+
+          <div class="lyrics-head">
+            <label for="lyrics">Lyrics</label>
+            <button type="button" id="aiLyricsBtn" class="ghost small">🪄 Write lyrics with AI</button>
+          </div>
+          <div id="aiLyricsBox" class="ai-lyrics" hidden>
+            <input id="lyricsIdea" maxlength="200" placeholder="What should the lyrics be about? e.g. falling in love on a rainy night" />
+            <button type="button" id="aiLyricsGo" class="small">Generate</button>
+          </div>
+          <div id="lyricsOptions" class="lyrics-options" hidden></div>
+          <textarea id="lyrics" maxlength="5000" rows="8"
+            placeholder="[Verse]&#10;Neon lights on the highway&#10;&#10;[Chorus]&#10;We're driving into the night..."></textarea>
+          <div class="hint"><span id="lyricsCount">0</span>/5000 · Use tags like [Verse], [Chorus], [Bridge]</div>
+
+          <label for="negativeTags">Avoid (optional)</label>
+          <input id="negativeTags" maxlength="1000" placeholder="heavy metal, screaming" />
+
+          <details class="advanced">
+            <summary>Advanced settings</summary>
+            <div class="sliders">
+              <label>Length <output id="durationOut">auto</output>
+                <input type="range" id="duration" min="0" max="360" step="10" value="0" />
+              </label>
+              <label>Style strength <output id="styleWeightOut">0.65</output>
+                <input type="range" id="styleWeight" min="0" max="1" step="0.05" value="0.65" />
+              </label>
+              <label>Weirdness <output id="weirdnessOut">0.50</output>
+                <input type="range" id="weirdness" min="0" max="1" step="0.05" value="0.5" />
+              </label>
+              <label>Variety <output id="varietyOut">Normal</output>
+                <input type="range" id="variety" min="0" max="4" step="1" value="1" />
+              </label>
+            </div>
+          </details>
+        </div>
+
+        <div class="controls">
+          <label class="switch">
+            <input type="checkbox" id="instrumental" />
+            <span class="slider"></span>
+            <span>Instrumental (no vocals)</span>
+          </label>
+          <label class="model">
+            Model
+            <select id="model">
+              <option value="V6">V6 — best quality</option>
+              <option value="V6_WILD">V6 Wild — bold & creative</option>
+              <option value="V6_MINI">V6 Mini — fastest</option>
+            </select>
+          </label>
+        </div>
+
+        <button id="genBtn" class="primary" type="submit">🎵 Create song</button>
+        <p id="formError" class="error" role="alert" hidden></p>
+      </form>
+    </section>
+
+    <section>
+      <div class="lib-head">
+        <h2>Your songs</h2>
+        <button id="clearBtn" class="ghost small" hidden>Clear list</button>
+      </div>
+      <p class="muted small-text">Songs are saved in this browser. Download any you want to keep — files expire on Suno's servers after 14 days.</p>
+      <div id="library" class="library"></div>
+      <p id="emptyLib" class="empty">No songs yet. Create your first one above! 🎶</p>
+    </section>
+  </main>
+
+  <footer class="foot">Powered by Suno API</footer>
+
+  <dialog id="pwDialog">
+    <form method="dialog" id="pwForm">
+      <h3>Enter app password</h3>
+      <p class="muted">This app is password protected.</p>
+      <input id="pwInput" type="password" placeholder="Password" required />
+      <button class="primary" value="ok">Unlock</button>
+    </form>
+  </dialog>
+
+  <template id="taskTpl">
+    <article class="task">
+      <div class="task-head">
+        <div>
+          <div class="task-title"></div>
+          <div class="task-meta"></div>
+        </div>
+        <span class="status"></span>
+      </div>
+      <div class="progress"><div class="bar"></div></div>
+      <div class="tracks"></div>
+    </article>
+  </template>
+
+  <template id="trackTpl">
+    <div class="track">
+      <img class="cover" alt="" loading="lazy" />
+      <div class="track-body">
+        <div class="track-title"></div>
+        <div class="track-tags"></div>
+        <audio controls preload="none"></audio>
+        <div class="track-actions">
+          <a class="dl ghost small" download target="_blank" rel="noopener">⬇ Download MP3</a>
+          <button class="show-lyrics ghost small" type="button">📝 Lyrics</button>
+        </div>
+        <pre class="track-lyrics" hidden></pre>
+      </div>
+    </div>
+  </template>
+
+  <script src="app.js"></script>
+</body>
+</html>
